@@ -73,26 +73,34 @@ jobs:
             clean build analyze \
             -scheme "$scheme" \
             -"$filetype_parameter" "$file_to_build" \
+            -derivedDataPath "$GITHUB_WORKSPACE/build" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             | xcpretty
 
           exit ${PIPESTATUS[0]}
-            - name: Package app
-        working-directory: FlashMoE-iOS
+
+      - name: Find built app
         run: |
-          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData \
-            -type d -name "*.app" \
-            -path "*/Build/Products/*" \
+          echo "Looking for built .app:"
+          find "$GITHUB_WORKSPACE/build" -type d -name "*.app" -print
+
+      - name: Package app
+        run: |
+          APP_PATH=$(find "$GITHUB_WORKSPACE/build" \
+            -type d \
+            -name "*.app" \
             | head -1)
 
           if [ -z "$APP_PATH" ]; then
             echo "ERROR: No .app found"
-            find ~/Library/Developer/Xcode/DerivedData -name "*.app" -print
+            find "$GITHUB_WORKSPACE/build" -type f | head -200
             exit 1
           fi
 
-          echo "Found app: $APP_PATH"
+          echo "Found app:"
+          echo "$APP_PATH"
+
           mkdir -p "$GITHUB_WORKSPACE/artifacts/Payload"
           cp -R "$APP_PATH" "$GITHUB_WORKSPACE/artifacts/Payload/"
 
