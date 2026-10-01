@@ -78,3 +78,30 @@ jobs:
             | xcpretty
 
           exit ${PIPESTATUS[0]}
+            - name: Package app
+        working-directory: FlashMoE-iOS
+        run: |
+          APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData \
+            -type d -name "*.app" \
+            -path "*/Build/Products/*" \
+            | head -1)
+
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: No .app found"
+            find ~/Library/Developer/Xcode/DerivedData -name "*.app" -print
+            exit 1
+          fi
+
+          echo "Found app: $APP_PATH"
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/Payload"
+          cp -R "$APP_PATH" "$GITHUB_WORKSPACE/artifacts/Payload/"
+
+          cd "$GITHUB_WORKSPACE/artifacts"
+          zip -r FlashMoE-iOS-unsigned.zip Payload
+
+      - name: Upload unsigned app
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlashMoE-iOS-unsigned
+          path: artifacts/FlashMoE-iOS-unsigned.zip
+          if-no-files-found: error
